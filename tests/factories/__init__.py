@@ -1,3 +1,3 @@
-from .user import UserFactory
+from tests.factories.user import UserFactory
 
 __all__ = ["UserFactory"]

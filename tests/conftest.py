@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from api.dependencies import db
-from db.models.base import Base
+from db.models import Base
 from main import app
 
 

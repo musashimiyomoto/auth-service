@@ -1,5 +1,5 @@
-from .auth import LoginSchema, TokenSchema
-from .user import UserCreateSchema, UserResponseSchema
+from api.schemas.auth import LoginSchema, TokenSchema
+from api.schemas.user import UserCreateSchema, UserResponseSchema
 
 __all__ = [
     "LoginSchema",

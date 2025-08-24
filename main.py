@@ -1,7 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from api.routers import auth, user
+from exceptions import AuthError
 
 app = FastAPI(title="Auth API")
 
@@ -12,6 +14,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(exc_class_or_status_code=AuthError)
+async def explorer_error_handler(request: Request, exc: AuthError) -> JSONResponse:
+    """Auth error handler.
+
+    Args:
+        request: The request.
+        exc: The exception.
+
+    Returns:
+        The JSON response.
+
+    """
+    return JSONResponse(content={"detail": exc.message}, status_code=exc.status_code)
+
 
 app.include_router(router=auth.router)
 app.include_router(router=user.router)
