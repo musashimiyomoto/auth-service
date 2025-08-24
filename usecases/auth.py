@@ -1,0 +1,265 @@
+import secrets
+from datetime import UTC, datetime, timedelta
+
+from fastapi import HTTPException, status
+from jose import JWTError, jwt
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from db.models import User
+from db.repositories import UserRepository
+from settings import auth_settings
+from utils.crypto import pwd_context
+from utils.email import send_email
+from utils.redis import get_verify_code, set_verify_code
+
+
+class AuthUsecase:
+    def __init__(self):
+        self._user_repository = UserRepository()
+        self._credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials or user is inactive",
+            headers={"WWW-Authenticate": auth_settings.token_type},
+        )
+
+    @staticmethod
+    def _create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+        """Create an access token.
+
+        Args:
+            data: The data to encode.
+            expires_delta: The expiration time.
+
+        Returns:
+            The access token.
+
+        """
+        to_encode = data.copy()
+
+        if expires_delta:
+            expire = datetime.now(tz=UTC) + expires_delta
+        else:
+            expire = datetime.now(tz=UTC) + timedelta(
+                minutes=auth_settings.access_token_expire_minutes
+            )
+
+        to_encode.update({"exp": expire})
+
+        return jwt.encode(
+            claims=to_encode,
+            key=auth_settings.secret_key,
+            algorithm=auth_settings.algorithm,
+        )
+
+    def _get_payload(self, token: str) -> dict:
+        """Get the payload from the token.
+
+        Args:
+            token: The token.
+
+        Returns:
+            The payload.
+
+        """
+        try:
+            return jwt.decode(
+                token=token,
+                key=auth_settings.secret_key,
+                algorithms=[auth_settings.algorithm],
+            )
+        except JWTError as e:
+            raise self._credentials_exception from e
+
+    @staticmethod
+    def _generate_code() -> str:
+        """Generate a code.
+
+        Returns:
+            The code.
+
+        """
+        return str(secrets.randbelow(900000) + 100000)
+
+    async def _authenticate(
+        self, session: AsyncSession, email: str, password: str
+    ) -> User:
+        """Authenticate a user.
+
+        Args:
+            session: The session.
+            email: The email.
+            password: The password.
+
+        Returns:
+            The user.
+
+        """
+        user = await self._user_repository.get_by(session=session, email=email)
+
+        if not user or not user.is_active or not user.hashed_password:
+            raise self._credentials_exception
+
+        if not pwd_context.verify(secret=password, hash=user.hashed_password):
+            raise self._credentials_exception
+
+        return user
+
+    async def _get_user_by_email(self, session: AsyncSession, email: str) -> User:
+        """Get a user by email.
+
+        Args:
+            session: The session.
+            email: The email.
+
+        Returns:
+            The user.
+
+        """
+        user = await self._user_repository.get_by(session=session, email=email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="User not found"
+            )
+
+        return user
+
+    async def get_current(self, session: AsyncSession, token: str) -> User:
+        """Get the current user.
+
+        Args:
+            session: The session.
+            token: The token.
+
+        Returns:
+            The current user.
+
+        """
+        email = self._get_payload(token=token).get("sub")
+
+        if email is None:
+            raise self._credentials_exception
+
+        user = await self._user_repository.get_by(session=session, email=email)
+
+        if not user or not user.is_active:
+            raise self._credentials_exception
+
+        return user
+
+    async def login(self, session: AsyncSession, email: str, password: str) -> str:
+        """Login a user.
+
+        Args:
+            session: The session.
+            email: The email.
+            password: The password.
+
+        Returns:
+            The token.
+
+        """
+        user = await self._authenticate(
+            session=session,
+            email=email,
+            password=password,
+        )
+
+        if not user:
+            raise self._credentials_exception
+
+        return self._create_access_token(
+            data={"sub": user.email},
+            expires_delta=timedelta(minutes=auth_settings.access_token_expire_minutes),
+        )
+
+    async def register(
+        self,
+        session: AsyncSession,
+        email: str,
+        password: str,
+        is_active: bool = False,
+        first_name: str | None = None,
+        last_name: str | None = None,
+    ) -> User:
+        """Register a user.
+
+        Args:
+            data: The data.
+            role: The role.
+            session: The session.
+            parent_id: The parent ID.
+            is_active: Whether the user is active.
+
+        Returns:
+            The user.
+
+        """
+        if await self._user_repository.get_by(session=session, email=email):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered",
+            )
+
+        return await self._user_repository.create(
+            session=session,
+            data={
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name,
+                "hashed_password": pwd_context.hash(secret=password),
+                "is_active": is_active,
+            },
+        )
+
+    async def send_email_code(self, session: AsyncSession, email: str) -> None:
+        """Send an email code.
+
+        Args:
+            session: The session.
+            email: The email.
+
+        """
+        user = await self._get_user_by_email(session=session, email=email)
+
+        if user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="User is active"
+            )
+
+        code = self._generate_code()
+        await set_verify_code(identifier=user.email, code=code)
+
+        html = (
+            "<html><body><p>Код, который следует скопировать и испольовать для "
+            "авторизации:</p><h3>{code}</h3><p>Это письмо отправил робот, который "
+            "не проверяет входящую почту</p></body></html>"
+        ).format(code=code)
+
+        send_email(email=user.email, html=html, subject="Ваш код для верификации")
+
+    async def verify_email(self, email: str, code: str, session: AsyncSession) -> None:
+        """Verify an email.
+
+        Args:
+            email: The email.
+            code: The code.
+            session: The session.
+
+        """
+        user = await self._get_user_by_email(session=session, email=email)
+
+        if user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="User is active"
+            )
+
+        if await get_verify_code(identifier=user.email) != code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid code"
+            )
+
+        await self._user_repository.update_by(
+            session=session,
+            data={"is_active": True},
+            id=user.id,
+        )
