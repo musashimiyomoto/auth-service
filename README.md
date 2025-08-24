@@ -35,4 +35,14 @@ docker compose up --build
 
 5. Access the API documentation:
    - Swagger UI: http://localhost:8000/docs
-   - ReDoc: http://localhost:8000/redoc
+
+## Registration Process
+
+The authentication service implements a secure email verification flow:
+
+1. **User Registration**: User sends a POST request to `/auth/register` with email, password, and optional name fields
+2. **Email Verification Code**: After registration, the user sends a POST request to `/auth/send/{email}/code` to receive a verification code
+3. **Code Delivery**: The verification code is sent to the user's email and can be accessed via MailCatcher at http://localhost:1080 (for testing purposes)
+4. **Email Verification**: User submits the code via POST request to `/auth/verify/{email}/{code}` to verify their account
+5. **Account Activation**: Upon successful verification, the user account is activated and they can proceed to login
+6. **Authentication**: User can now login via POST request to `/auth/login` and perform authenticated requests
