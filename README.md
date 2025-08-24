@@ -11,30 +11,40 @@
 
 ## Requirements
 
+- Python 3.11
+- Poetry
 - Docker and Docker Compose
 
-## Setup and Running
+## Docker Run
 
-1. Clone the repository:
-```bash
-git clone https://github.com/musashimiyomoto/auth-service.git
-cd directory-api
-```
-
-2. Create an environment file:
+1. Create an environment file:
 ```bash
 cp .env.example .env
 ```
 
-3. Edit the `.env` file with your settings.
+2. Edit the `.env` file with your settings.
 
-4. Start the application with Docker Compose:
+3. Start the application with Docker Compose:
 ```bash
 docker compose up --build
 ```
 
-5. Access the API documentation:
+4. Access the API documentation:
    - Swagger UI: http://localhost:8000/docs
+
+## Development
+
+### Setup
+
+1. **Install Requirements**:
+```bash
+poetry install --with dev,test
+```
+
+2. **Install pre-commit**:
+```bash
+pre-commit install
+```
 
 ## Registration Process
 
