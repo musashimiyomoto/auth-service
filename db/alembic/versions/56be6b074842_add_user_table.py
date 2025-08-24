@@ -32,7 +32,7 @@ def upgrade() -> None:
         sa.Column("is_active", sa.Boolean(), nullable=False, comment="Is active"),
         sa.Column(
             "last_login",
-            sa.DateTime(timezone=True),
+            sa.DateTime(),
             nullable=True,
             comment="Last login",
         ),

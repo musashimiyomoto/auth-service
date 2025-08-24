@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, String, func
+from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from db.models.base import Base
@@ -20,9 +20,7 @@ class User(Base):
     hashed_password: Mapped[str | None] = mapped_column(comment="Hashed password")
 
     is_active: Mapped[bool] = mapped_column(default=True, comment="Is active")
-    last_login: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), comment="Last login"
-    )
+    last_login: Mapped[datetime | None] = mapped_column(comment="Last login")
 
     created_at: Mapped[datetime] = mapped_column(
         server_default=func.now(), comment="Created at"

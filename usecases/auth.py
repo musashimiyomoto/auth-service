@@ -177,18 +177,17 @@ class AuthUsecase:
         session: AsyncSession,
         email: str,
         password: str,
-        is_active: bool = False,
         first_name: str | None = None,
         last_name: str | None = None,
     ) -> User:
         """Register a user.
 
         Args:
-            data: The data.
-            role: The role.
             session: The session.
-            parent_id: The parent ID.
-            is_active: Whether the user is active.
+            email: The email.
+            password: The password.
+            first_name: The first name.
+            last_name: The last name.
 
         Returns:
             The user.
@@ -207,7 +206,7 @@ class AuthUsecase:
                 "first_name": first_name,
                 "last_name": last_name,
                 "hashed_password": pwd_context.hash(secret=password),
-                "is_active": is_active,
+                "is_active": False,
             },
         )
 

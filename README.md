@@ -17,7 +17,7 @@
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/musashimiyomoto/directory-api.git
+git clone https://github.com/musashimiyomoto/auth-service.git
 cd directory-api
 ```
 
