@@ -229,13 +229,17 @@ class AuthUsecase:
         code = self._generate_code()
         await set_verify_code(identifier=user.email, code=code)
 
-        html = (
-            "<html><body><p>Код, который следует скопировать и испольовать для "
-            "авторизации:</p><h3>{code}</h3><p>Это письмо отправил робот, который "
-            "не проверяет входящую почту</p></body></html>"
+        html_content = (
+            "<html><body><p>Code, which should be copied and used for "
+            "authorization:</p><h3>{code}</h3><p>This message was sent by a robot, "
+            "which does not check incoming mail</p></body></html>"
         ).format(code=code)
 
-        send_email(email=user.email, html=html, subject="Ваш код для верификации")
+        send_email(
+            email=user.email,
+            html_content=html_content,
+            subject="Your verification code",
+        )
 
     async def verify_email(self, email: str, code: str, session: AsyncSession) -> None:
         """Verify an email.

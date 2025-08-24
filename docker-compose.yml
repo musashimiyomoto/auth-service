@@ -15,7 +15,7 @@ services:
     command: [ "bash", "/docker-entrypoint.sh", "gunicorn", "main:app" ]
 
   db:
-    image: postgres:14-alpine
+    image: postgres:14
     restart: always
     environment:
       POSTGRES_USER: ${DB_LOGIN}
@@ -28,23 +28,30 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_LOGIN}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_LOGIN}" ]
       interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
-    image: redis:alpine
+    image: redis:8.2.1
     restart: always
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping"]
+      test: [ "CMD-SHELL", "redis-cli ping" ]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  mailcatcher:
+    image: schickling/mailcatcher
+    restart: always
+    ports:
+      - "1080:1080"
+      - "1025:1025"
 
 volumes:
   db_data:
