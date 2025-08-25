@@ -42,3 +42,6 @@ jobs:
 
     - name: Check pyright
       run: poetry run pyright .
+
+    - name: Run tests
+      run: poetry run pytest -v --cov=. --cov-report=term-missing --cov-report=xml
