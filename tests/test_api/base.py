@@ -20,7 +20,7 @@ class BaseTestCase:
 
     @pytest_asyncio.fixture(autouse=True)
     async def _mock_smtp(self) -> AsyncGenerator[mock.MagicMock, None]:
-        with mock.patch("smtplib.SMTP_SSL") as mock_smtp:
+        with mock.patch("smtplib.SMTP") as mock_smtp:
             mock_server = mock.MagicMock()
             mock_smtp.return_value.__enter__.return_value = mock_server
             mock_smtp.return_value.__exit__.return_value = None
@@ -37,13 +37,9 @@ class BaseTestCase:
             redis_store[name] = value
             return "OK"
 
-        async def mock_publish(channel, message):
-            return 1
-
         with mock.patch("utils.redis.redis_client") as mock_redis:
             mock_redis.get.side_effect = mock_get
             mock_redis.setex.side_effect = mock_setex
-            mock_redis.publish.side_effect = mock_publish
             yield mock_redis
 
     async def assert_response_ok(self, response: Response) -> dict:
