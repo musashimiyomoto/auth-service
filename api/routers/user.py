@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from api.dependencies import auth
 from api.schemas import UserResponseSchema
 
-router = APIRouter(prefix="/user", tags=["Admin | User"])
+router = APIRouter(prefix="/user", tags=["User"])
 
 
 @router.get(path="/me")
