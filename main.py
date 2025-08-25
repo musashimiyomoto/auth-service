@@ -17,7 +17,7 @@ app.add_middleware(
 
 
 @app.exception_handler(exc_class_or_status_code=AuthError)
-async def explorer_error_handler(request: Request, exc: AuthError) -> JSONResponse:
+async def auth_error_handler(request: Request, exc: AuthError) -> JSONResponse:
     """Auth error handler.
 
     Args:
