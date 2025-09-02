@@ -5,10 +5,12 @@ from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import User
-from db.repositories import UserRepository
+from db.repositories import PermissionRepository, UserRepository
+from enums import ActionEnum, ResourceEnum
 from exceptions import (
     AuthCodeInvalidError,
     AuthCredentialsError,
+    AuthPermissionsError,
     UserAlreadyActiveError,
     UserAlreadyExistsError,
     UserNotFoundError,
@@ -22,6 +24,7 @@ from utils.redis import get_verify_code, set_verify_code
 class AuthUsecase:
     def __init__(self):
         self._user_repository = UserRepository()
+        self._permission_repository = PermissionRepository()
 
     @staticmethod
     def _create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
@@ -52,7 +55,7 @@ class AuthUsecase:
             algorithm=auth_settings.algorithm,
         )
 
-    def _get_payload(self, token: str) -> dict:
+    def get_payload(self, token: str) -> dict:
         """Get the payload from the token.
 
         Args:
@@ -133,29 +136,45 @@ class AuthUsecase:
 
         return user
 
-    async def get_current(self, session: AsyncSession, token: str) -> User:
-        """Get the current user.
+    async def get_current(
+        self,
+        session: AsyncSession,
+        token: str,
+        action: ActionEnum,
+        resource: ResourceEnum,
+    ) -> User:
+        """Get the current user and check permissions.
 
         Args:
             session: The session.
             token: The token.
+            action: The action.
+            resource: The resource.
 
         Returns:
-            The current user.
+            The user.
 
         Raises:
             AuthCredentialsError: If the token is invalid.
+            AuthPermissionsError: If the user does not have permission to perform the action.
 
         """
-        email = self._get_payload(token=token).get("sub")
+        payload = self.get_payload(token=token)
+        email = payload.get("sub")
+        role = payload.get("role")
 
-        if email is None:
+        if email is None or role is None:
             raise AuthCredentialsError
 
         user = await self._user_repository.get_by(session=session, email=email)
 
         if not user or not user.is_active:
             raise AuthCredentialsError
+
+        if not await self._permission_repository.get_by(
+            session=session, role=role, action=action, resource=resource
+        ):
+            raise AuthPermissionsError
 
         return user
 
@@ -184,7 +203,7 @@ class AuthUsecase:
             raise AuthCredentialsError
 
         return self._create_access_token(
-            data={"sub": user.email},
+            data={"sub": user.email, "role": user.role.value},
             expires_delta=timedelta(minutes=auth_settings.access_token_expire_minutes),
         )
 

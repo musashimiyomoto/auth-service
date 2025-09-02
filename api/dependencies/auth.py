@@ -1,33 +1,49 @@
-from typing import Annotated
+from typing import Annotated, Awaitable, Callable
 
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.dependencies import db
 from api.schemas import UserResponseSchema
-from usecases.auth import AuthUsecase
+from enums import ActionEnum, ResourceEnum
+from usecases import AuthUsecase
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+security = HTTPBearer()
 
 
-async def get_current_user(
-    token: Annotated[str, Depends(dependency=oauth2_scheme)],
-    session: Annotated[AsyncSession, Depends(dependency=db.get_session)],
-) -> UserResponseSchema:
-    """Get the current client.
+def get_current(
+    action: ActionEnum, resource: ResourceEnum
+) -> Callable[..., Awaitable[UserResponseSchema]]:
+    """Get the user and check permissions.
 
     Dependencies:
-        token: The token.
+        action: The action.
+        resource: The resource.
+        credentials: The credentials.
         session: The session.
 
     Returns:
-        The current client.
+        The user.
 
     """
-    return UserResponseSchema.model_validate(
-        await AuthUsecase().get_current(token=token, session=session)
-    )
+
+    async def _dependency(
+        credentials: Annotated[
+            HTTPAuthorizationCredentials, Depends(dependency=security)
+        ],
+        session: Annotated[AsyncSession, Depends(dependency=db.get_session)],
+    ) -> UserResponseSchema:
+        return UserResponseSchema.model_validate(
+            await AuthUsecase().get_current(
+                token=credentials.credentials,
+                session=session,
+                action=action,
+                resource=resource,
+            )
+        )
+
+    return _dependency
 
 
 def get_auth_usecase() -> AuthUsecase:

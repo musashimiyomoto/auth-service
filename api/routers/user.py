@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 
 from api.dependencies import auth
 from api.schemas import UserResponseSchema
+from enums import ActionEnum, ResourceEnum
 
 router = APIRouter(prefix="/user", tags=["User"])
 
@@ -11,7 +12,12 @@ router = APIRouter(prefix="/user", tags=["User"])
 @router.get(path="/me")
 async def get_me(
     current_user: Annotated[
-        UserResponseSchema, Depends(dependency=auth.get_current_user)
+        UserResponseSchema,
+        Depends(
+            dependency=auth.get_current(
+                action=ActionEnum.READ, resource=ResourceEnum.USER
+            )
+        ),
     ],
 ) -> UserResponseSchema:
     return current_user

@@ -1,4 +1,8 @@
-from exceptions.auth import AuthCodeInvalidError, AuthCredentialsError
+from exceptions.auth import (
+    AuthCodeInvalidError,
+    AuthCredentialsError,
+    AuthPermissionsError,
+)
 from exceptions.base import BaseError
 from exceptions.user import (
     UserAlreadyActiveError,
@@ -9,6 +13,7 @@ from exceptions.user import (
 __all__ = [
     "AuthCredentialsError",
     "AuthCodeInvalidError",
+    "AuthPermissionsError",
     "UserNotFoundError",
     "UserAlreadyExistsError",
     "UserAlreadyActiveError",
