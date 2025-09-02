@@ -1,13 +1,18 @@
 import secrets
 from datetime import UTC, datetime, timedelta
-from http import HTTPStatus
 
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import User
 from db.repositories import UserRepository
-from exceptions.auth import AuthCredentialsError, AuthError
+from exceptions import (
+    AuthCodeInvalidError,
+    AuthCredentialsError,
+    UserAlreadyActiveError,
+    UserAlreadyExistsError,
+    UserNotFoundError,
+)
 from settings import auth_settings
 from utils.crypto import pwd_context
 from utils.email import send_email
@@ -56,6 +61,9 @@ class AuthUsecase:
         Returns:
             The payload.
 
+        Raises:
+            AuthCredentialsError: If the token is invalid.
+
         """
         try:
             return jwt.decode(
@@ -89,13 +97,18 @@ class AuthUsecase:
         Returns:
             The user.
 
+        Raises:
+            AuthCredentialsError: If the user is not authenticated.
+
         """
         user = await self._user_repository.get_by(session=session, email=email)
 
-        if not user or not user.is_active or not user.hashed_password:
-            raise AuthCredentialsError
-
-        if not pwd_context.verify(secret=password, hash=user.hashed_password):
+        if (
+            not user
+            or not user.is_active
+            or not user.hashed_password
+            or not pwd_context.verify(secret=password, hash=user.hashed_password)
+        ):
             raise AuthCredentialsError
 
         return user
@@ -110,13 +123,13 @@ class AuthUsecase:
         Returns:
             The user.
 
+        Raises:
+            UserNotFoundError: If the user is not found.
+
         """
         user = await self._user_repository.get_by(session=session, email=email)
         if not user:
-            raise AuthError(
-                message="User not found",
-                status_code=HTTPStatus.BAD_REQUEST,
-            )
+            raise UserNotFoundError
 
         return user
 
@@ -129,6 +142,9 @@ class AuthUsecase:
 
         Returns:
             The current user.
+
+        Raises:
+            AuthCredentialsError: If the token is invalid.
 
         """
         email = self._get_payload(token=token).get("sub")
@@ -153,6 +169,9 @@ class AuthUsecase:
 
         Returns:
             The token.
+
+        Raises:
+            AuthCredentialsError: If the user is not authenticated.
 
         """
         user = await self._authenticate(
@@ -189,12 +208,12 @@ class AuthUsecase:
         Returns:
             The user.
 
+        Raises:
+            UserAlreadyExistsError: If the user already exists.
+
         """
         if await self._user_repository.get_by(session=session, email=email):
-            raise AuthError(
-                message="Email already registered",
-                status_code=HTTPStatus.BAD_REQUEST,
-            )
+            raise UserAlreadyExistsError
 
         return await self._user_repository.create(
             session=session,
@@ -214,14 +233,14 @@ class AuthUsecase:
             session: The session.
             email: The email.
 
+        Raises:
+            UserAlreadyActiveError: If the user is already active.
+
         """
         user = await self._get_user_by_email(session=session, email=email)
 
         if user.is_active:
-            raise AuthError(
-                message="User is active",
-                status_code=HTTPStatus.BAD_REQUEST,
-            )
+            raise UserAlreadyActiveError
 
         code = self._generate_code()
         await set_verify_code(identifier=user.email, code=code)
@@ -246,20 +265,18 @@ class AuthUsecase:
             code: The code.
             session: The session.
 
+        Raises:
+            UserAlreadyActiveError: If the user is already active.
+            AuthCodeInvalidError: If the code is invalid.
+
         """
         user = await self._get_user_by_email(session=session, email=email)
 
         if user.is_active:
-            raise AuthError(
-                message="User is active",
-                status_code=HTTPStatus.BAD_REQUEST,
-            )
+            raise UserAlreadyActiveError
 
         if await get_verify_code(identifier=user.email) != code:
-            raise AuthError(
-                message="Invalid code",
-                status_code=HTTPStatus.BAD_REQUEST,
-            )
+            raise AuthCodeInvalidError
 
         await self._user_repository.update_by(
             session=session,

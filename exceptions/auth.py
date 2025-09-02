@@ -1,21 +1,21 @@
 from http import HTTPStatus
 
-
-class AuthError(Exception):
-    def __init__(
-        self,
-        message: str = "An error occurred",
-        status_code: HTTPStatus = HTTPStatus.INTERNAL_SERVER_ERROR,
-    ):
-        super().__init__(message)
-        self.message = message
-        self.status_code = status_code
+from exceptions.base import BaseError
 
 
-class AuthCredentialsError(AuthError):
+class AuthCredentialsError(BaseError):
     def __init__(
         self,
         message: str = "Could not validate credentials or user is inactive",
         status_code: HTTPStatus = HTTPStatus.UNAUTHORIZED,
     ):
-        super().__init__(message)
+        super().__init__(message=message, status_code=status_code)
+
+
+class AuthCodeInvalidError(BaseError):
+    def __init__(
+        self,
+        message: str = "Invalid code",
+        status_code: HTTPStatus = HTTPStatus.BAD_REQUEST,
+    ):
+        super().__init__(message=message, status_code=status_code)

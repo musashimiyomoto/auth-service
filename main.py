@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from api.routers import auth, user
-from exceptions import AuthError
+from exceptions import BaseError
 
 app = FastAPI(title="Auth API")
 
@@ -16,9 +16,9 @@ app.add_middleware(
 )
 
 
-@app.exception_handler(exc_class_or_status_code=AuthError)
-async def auth_error_handler(request: Request, exc: AuthError) -> JSONResponse:
-    """Auth error handler.
+@app.exception_handler(exc_class_or_status_code=BaseError)
+async def error_handler(request: Request, exc: BaseError) -> JSONResponse:
+    """Error handler.
 
     Args:
         request: The request.

@@ -68,7 +68,7 @@ class TestAuthLogin(BaseTestCase):
         assert data["token_type"] == auth_settings.token_type
 
 
-class TestAdminAuthSendEmailCode(BaseTestCase):
+class TestAuthSendEmailCode(BaseTestCase):
     url = "/auth/send/{email}/code"
 
     def _user_data(self) -> dict:
