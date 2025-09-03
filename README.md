@@ -1,4 +1,4 @@
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3110/)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -15,35 +15,77 @@
 - Poetry
 - Docker and Docker Compose
 
-## Docker Run
+## Quick Start with Makefile
 
-1. Create an environment file:
+This project includes a comprehensive Makefile that simplifies common development tasks. To see all available commands:
+
 ```bash
-cp .env.example .env
+make help
 ```
 
-2. Edit the `.env` file with your settings.
+### Docker Run
 
-3. Start the application with Docker Compose:
+1. **Build and start the application**:
 ```bash
-docker compose up --build
+make build
+```
+This command will:
+- Automatically copy `.env.example` to `.env` if it doesn't exist
+- Build and start the application using Docker Compose
+
+2. **Stop the application**:
+```bash
+make stop
 ```
 
-4. Access the API documentation:
+3. **Access the API documentation**:
    - Swagger UI: http://localhost:8000/docs
+   - MailCatcher (for testing): http://localhost:1080
+   - Adminer (for database): http://localhost:8080
 
 ## Development
 
 ### Setup
 
-1. **Install Requirements**:
+1. **Install all dependencies and setup pre-commit hooks**:
 ```bash
-poetry install --with dev,test
+make install
+```
+This command will:
+- Install all project dependencies including development and test dependencies
+- Set up pre-commit hooks for code quality
+
+### Available Makefile Commands
+
+| Command | Description |
+|---------|-------------|
+| `make help` | Show all available commands with descriptions |
+| `make install` | Install dependencies and setup pre-commit hooks |
+| `make format` | Format code using black and isort |
+| `make check` | Run code quality checks with ruff and pyright |
+| `make test` | Run tests with coverage reporting |
+| `make build` | Build and start the application with Docker Compose |
+| `make stop` | Stop the Docker Compose services |
+
+### Development Workflow
+
+1. **Initial setup**:
+```bash
+make install
 ```
 
-2. **Install pre-commit**:
+2. **Before committing code**:
 ```bash
-pre-commit install
+make format    # Format your code
+make check     # Run linting and type checks
+make test      # Run tests
+```
+
+3. **Build and test the application**:
+```bash
+make build     # Start the application
+# Test your changes
+make stop      # Stop when done
 ```
 
 ## Registration Process
