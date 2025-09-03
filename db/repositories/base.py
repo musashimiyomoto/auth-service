@@ -31,6 +31,28 @@ class BaseRepository(Generic[Model]):
 
         return instance
 
+    async def create_many(
+        self, session: AsyncSession, data: list[dict[str, Any]]
+    ) -> list[Model]:
+        """Create multiple model instances.
+
+        Args:
+            session: The async session.
+            data: The data to create the model instances.
+
+        Returns:
+            The list of created model instances.
+
+        """
+        instances = [self.model(**item) for item in data]
+
+        session.add_all(instances)
+        await session.commit()
+        for instance in instances:
+            await session.refresh(instance)
+
+        return instances
+
     async def get_all(self, session: AsyncSession, **filters) -> list[Model]:
         """Get all model instances.
 

@@ -17,6 +17,8 @@ class Permission(Base):
     action: Mapped[ActionEnum] = mapped_column(primary_key=True, comment="Action")
     resource: Mapped[ResourceEnum] = mapped_column(primary_key=True, comment="Resource")
 
+    is_active: Mapped[bool] = mapped_column(default=True, comment="Is active")
+
     created_at: Mapped[datetime] = mapped_column(
         server_default=func.now(), comment="Created at"
     )

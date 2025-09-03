@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import User
 from db.repositories import PermissionRepository, UserRepository
-from enums import ActionEnum, ResourceEnum
+from enums import ActionEnum, ResourceEnum, RoleEnum
 from exceptions import (
     AuthCodeInvalidError,
     AuthCredentialsError,
@@ -136,7 +136,7 @@ class AuthUsecase:
 
         return user
 
-    async def get_current(
+    async def get_current_user(
         self,
         session: AsyncSession,
         token: str,
@@ -156,14 +156,13 @@ class AuthUsecase:
 
         Raises:
             AuthCredentialsError: If the token is invalid.
-            AuthPermissionsError: If the user does not have permission to perform the action.
+            AuthPermissionsError: If the user don't have permission to call the action.
 
         """
         payload = self.get_payload(token=token)
         email = payload.get("sub")
-        role = payload.get("role")
 
-        if email is None or role is None:
+        if email is None:
             raise AuthCredentialsError
 
         user = await self._user_repository.get_by(session=session, email=email)
@@ -171,9 +170,11 @@ class AuthUsecase:
         if not user or not user.is_active:
             raise AuthCredentialsError
 
-        if not await self._permission_repository.get_by(
-            session=session, role=role, action=action, resource=resource
-        ):
+        permission = await self._permission_repository.get_by(
+            session=session, role=user.role, action=action, resource=resource
+        )
+
+        if permission and not permission.is_active or not permission:
             raise AuthPermissionsError
 
         return user
@@ -203,7 +204,7 @@ class AuthUsecase:
             raise AuthCredentialsError
 
         return self._create_access_token(
-            data={"sub": user.email, "role": user.role.value},
+            data={"sub": user.email},
             expires_delta=timedelta(minutes=auth_settings.access_token_expire_minutes),
         )
 
@@ -242,6 +243,7 @@ class AuthUsecase:
                 "last_name": last_name,
                 "hashed_password": pwd_context.hash(secret=password),
                 "is_active": False,
+                "role": RoleEnum.USER,
             },
         )
 

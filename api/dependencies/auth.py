@@ -12,7 +12,7 @@ from usecases import AuthUsecase
 security = HTTPBearer()
 
 
-def get_current(
+def get_current_user(
     action: ActionEnum, resource: ResourceEnum
 ) -> Callable[..., Awaitable[UserResponseSchema]]:
     """Get the user and check permissions.
@@ -35,7 +35,7 @@ def get_current(
         session: Annotated[AsyncSession, Depends(dependency=db.get_session)],
     ) -> UserResponseSchema:
         return UserResponseSchema.model_validate(
-            await AuthUsecase().get_current(
+            await AuthUsecase().get_current_user(
                 token=credentials.credentials,
                 session=session,
                 action=action,

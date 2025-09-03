@@ -17,6 +17,7 @@ sqlalchemy = "2.0.37"
 asyncpg = "0.28.0"
 python-jose = "3.4.0"
 passlib = "1.7.4"
+loguru = "0.7.3"
 python-multipart = "0.0.20"
 
 [tool.poetry.group.dev]
