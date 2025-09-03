@@ -42,7 +42,7 @@ async def get_permissions(
     ]
 
 
-@router.patch(path="/status")
+@router.patch(path="")
 async def update_permission(
     data: Annotated[
         PermissionStatusUpdateSchema,
@@ -68,7 +68,7 @@ async def update_permission(
     return PermissionResponseSchema.model_validate(
         await usecase.update_by(
             session=session,
-            **data.model_dump(),
+            data=data.model_dump(),
             **filters.model_dump(exclude_none=True),
         )
     )

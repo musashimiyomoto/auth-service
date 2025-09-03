@@ -3,6 +3,7 @@ from unittest import mock
 
 import pytest
 
+from enums import RoleEnum
 from settings import auth_settings
 from tests.factories import UserFactory
 from tests.test_api.base import BaseTestCase
@@ -31,6 +32,7 @@ class TestAuthRegister(BaseTestCase):
         assert data["first_name"] == user_data["first_name"]
         assert data["last_name"] == user_data["last_name"]
         assert data["email"] == user_data["email"]
+        assert data["role"] == RoleEnum.USER
         assert data["is_active"] is False
         assert "created_at" in data
         assert "hashed_password" not in data
