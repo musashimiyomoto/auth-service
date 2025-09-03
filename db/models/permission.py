@@ -1,16 +1,16 @@
 from datetime import datetime
 
-from sqlalchemy import func, Index
+from sqlalchemy import Index, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from db.models.base import Base
-from enums import RoleEnum, ActionEnum, ResourceEnum
+from enums import ActionEnum, ResourceEnum, RoleEnum
 
 
 class Permission(Base):
     __tablename__ = "permissions"
     __table_args__ = (
-        Index(name="index_role_action_resource", "role", "action", "resource"),
+        Index("index_role_action_resource", "role", "action", "resource"),
     )
 
     role: Mapped[RoleEnum] = mapped_column(primary_key=True, comment="Role")
