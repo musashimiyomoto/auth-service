@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 from enums import RoleEnum
 
@@ -8,7 +8,7 @@ from enums import RoleEnum
 class UserBaseSchema(BaseModel):
     first_name: str | None = Field(default=None, description="First name")
     last_name: str | None = Field(default=None, description="Last name")
-    email: str = Field(default=..., description="Email of the user")
+    email: EmailStr = Field(default=..., description="Email of the user")
 
 
 class UserCreateSchema(UserBaseSchema):

@@ -2,8 +2,8 @@ from factory.declarations import LazyAttribute
 from factory.helpers import post_generation
 
 from db.models.user import User
-
-from .base import AsyncSQLAlchemyModelFactory, fake
+from enums import RoleEnum
+from tests.factories.base import AsyncSQLAlchemyModelFactory, fake
 
 
 class UserFactory(AsyncSQLAlchemyModelFactory):
@@ -13,7 +13,10 @@ class UserFactory(AsyncSQLAlchemyModelFactory):
     first_name = LazyAttribute(lambda obj: fake.first_name())
     last_name = LazyAttribute(lambda obj: fake.last_name())
     email = LazyAttribute(lambda obj: fake.email())
+    role = RoleEnum.USER
+
     hashed_password = LazyAttribute(lambda obj: fake.password())
+
     is_active = True
 
     @post_generation
